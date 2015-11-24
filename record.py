@@ -3,11 +3,13 @@ import pygame
 import pygame.locals as pl
 import time
 
+from demonstration import Demonstration
+
 ale = ALE.ALEInterface()
 ale.setInt('random_seed', 123)
 pygame.init()
 ale.setBool('display_screen', True)
-ale.loadROM('space_invaders.bin')
+ale.loadROM('roms/space_invaders.bin')
 print pygame.display.Info()
 
 keys = [pl.K_SPACE, pl.K_UP, pl.K_RIGHT, pl.K_LEFT, pl.K_DOWN]
@@ -46,27 +48,31 @@ def keystate_to_ale_action(keystate):
     bitvec = sum(2**i if keystate[key] else 0 for i, key in enumerate(keys))
     assert bitvec in mapping
     return mapping[bitvec]
-        
+
 
 score = 0
-record = []
-while True:
-    events = pygame.event.get()
-    for event in events:
-        if hasattr(event, 'key') and event.key in keys:
-            if event.type == pygame.KEYDOWN:
-                keystates[event.key] = True
-            elif event.type == pygame.KEYUP:
-                keystates[event.key] = False
-    action = keystate_to_ale_action(keystates)
-    reward = ale.act(action)
-    score += reward
-    game_over = False
-    if ale.game_over():
-        print 'game over, score: {}'.format(score)
-        print 'restarting in 5 seconds'
-        score = 0
-        game_over = True
-        time.sleep(5)
-        ale.reset_game()
-    record.append({'screen': ale.getScreenRGB(), 'reward': reward, 'action': action, 'game_over': game_over})
+demonstration = Demonstration()
+try:
+    while True:
+        events = pygame.event.get()
+        for event in events:
+            if hasattr(event, 'key') and event.key in keys:
+                if event.type == pygame.KEYDOWN:
+                    keystates[event.key] = True
+                elif event.type == pygame.KEYUP:
+                    keystates[event.key] = False
+        action = keystate_to_ale_action(keystates)
+        reward = ale.act(action)
+        score += reward
+        game_over = False
+        if ale.game_over():
+            print 'game over, score: {}'.format(score)
+            print 'restarting in 5 seconds'
+            score = 0
+            game_over = True
+            time.sleep(5)
+            ale.reset_game()
+        demonstration.record_timestep(ale.getScreenRGB(), action, reward, game_over)
+except KeyboardInterrupt:
+    pass
+demonstration.save('test.pkl')
