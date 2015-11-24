@@ -57,7 +57,7 @@ def update_keystates(keystates):
 
 @click.group()
 def cli():
-    pygame.init()
+    pass
 
 @cli.command(name='new')
 @click.argument('rom', type=click.Path(exists=True))
@@ -65,6 +65,7 @@ def cli():
 @click.option('--frames', default=60 * 60 * 30)
 @click.option('--seed', default=123)
 def record_new(rom, output, frames, seed):
+    pygame.init()
     ale = ALE.ALEInterface()
     ale.setInt('random_seed', seed)
     ale.setBool('display_screen', True)
@@ -78,6 +79,7 @@ def record_new(rom, output, frames, seed):
 @click.option('--frames', default=60 * 60 * 30)
 @click.option('--rom', default=None)
 def resume(partial_demo, output, frames, rom):
+    pygame.init()
     demo = Demonstration.load(partial_demo)
     ale = ALE.ALEInterface()
     ale.setBool('display_screen', True)
