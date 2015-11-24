@@ -39,16 +39,22 @@ class FrameBank(object):
     def __setitem__(self, index, value):
         self.compressed_frames[index] = self._compress_frame(screen_rgb)
 
+    def reset_to_timestep(self, t):
+        del self.compressed_frames[t:]
+
 Timestep = namedtuple('Timestep', ['frame', 'action', 'reward', 'game_over'])
 
 class Demonstration(object):
 
-    def __init__(self):
-        self.index = 0
+    snapshot_interval = 1000
+
+    def __init__(self, rom):
+        self.rom = rom
         self.frames = FrameBank()
         self.actions = []
         self.rewards = []
         self.game_over = []
+        self.snapshots = {}
 
     def record_timestep(self, screen_rgb, action, reward, game_over):
         self.frames.append(screen_rgb)
@@ -66,7 +72,28 @@ class Demonstration(object):
     def save(self, path):
         with open(path, 'wb') as f:
             pickle.dump(self, f, pickle.HIGHEST_PROTOCOL)
+
+    def snapshot(self, ale):
+        state_ptr = ale.cloneSystemState()
+        self.snapshots[len(self)] = ale.encodeState(state_ptr)
+        ale.deleteState(state_ptr)
+
+    def reset_to_timestep(self, t):
+        for key in self.snapshots.keys():
+            if key > t:
+                del self.snapshots[key]
+        self.frames.reset_to_timestep(t)
+        del self.actions[t:]
+        del self.rewards[t:]
+        del self.game_over[t:]
         
+    def reset_to_latest_snapshot(self, ale):
+        latest = max(self.snapshots.keys())
+        self.reset_to_timestep(latest)
+        state_enc = self.snapshots[latest]
+        state_ptr = ale.decodeState(state_enc)
+        ale.restoreSystemState(state_ptr)
+        ale.deleteState(state_ptr)
 
     @staticmethod
     def load(path):
