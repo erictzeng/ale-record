@@ -58,6 +58,9 @@ docs/_build/
 # PyBuilder
 target/
 
+# pyenv
+.python-version
+
 # ALE
 roms/
 *.pkl
