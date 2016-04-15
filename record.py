@@ -49,6 +49,8 @@ def keystates_to_ale_action(keystates):
 def update_keystates(keystates):
     events = pygame.event.get()
     for event in events:
+        if hasattr(event, 'key') and event.key == pl.K_ESCAPE:
+            exit(0)
         if hasattr(event, 'key') and event.key in keys:
             if event.type == pygame.KEYDOWN:
                 keystates[event.key] = True
@@ -93,6 +95,7 @@ def resume(partial_demo, output, frames, rom):
 def record(ale, demo, output, num_frames):
     keystates = {key: False for key in keys}
     score = 0
+    clock = pygame.time.Clock()
     try:
         while len(demo) < num_frames:
             if len(demo) % demo.snapshot_interval == 0:
@@ -110,6 +113,8 @@ def record(ale, demo, output, num_frames):
                 time.sleep(5)
                 ale.reset_game()
             demo.record_timestep(ale.getScreenRGB(), action, reward, game_over)
+            clock.tick(60)
+            print clock.get_fps()
     except KeyboardInterrupt:
         pass
     finally:
