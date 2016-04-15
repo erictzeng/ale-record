@@ -103,22 +103,24 @@ def record(ale, demo, output, num_frames, num_episodes):
         while len(demo) < num_frames:
             if len(demo) % demo.snapshot_interval == 0:
                 demo.snapshot(ale)
+            frame = ale.getScreenRGB()
             update_keystates(keystates)
             action = keystates_to_ale_action(keystates)
             reward = ale.act(action)
             score += reward
-            game_over = False
-            if ale.game_over():
+            demo.record_timestep(frame, action, reward, False)
+            game_over = ale.game_over()
+            if game_over:
+                # record final frame
+                demo.record_timestep(ale.getScreenRGB(), 0, 0, True)
                 episodes += 1
                 print 'game over, score: {}'.format(score)
                 if num_episodes > 0 and episodes >= num_episodes:
                     break
                 print 'restarting in 5 seconds'
                 score = 0
-                game_over = True
                 time.sleep(5)
                 ale.reset_game()
-            demo.record_timestep(ale.getScreenRGB(), action, reward, game_over)
             clock.tick(60)
             if len(demo) % 10000 == 0:
                 print 'FPS:', clock.get_fps()
