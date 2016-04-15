@@ -65,22 +65,24 @@ def cli():
 @click.argument('rom', type=click.Path(exists=True))
 @click.argument('output', type=click.Path())
 @click.option('--frames', default=60 * 60 * 30)
+@click.option('--episodes', default=0)
 @click.option('--seed', default=123)
-def record_new(rom, output, frames, seed):
+def record_new(rom, output, frames, episodes, seed):
     pygame.init()
     ale = ALE.ALEInterface()
     ale.setInt('random_seed', seed)
     ale.setBool('display_screen', True)
     ale.loadROM(rom)
-    demo = Demonstration(rom)
-    record(ale, demo, output, frames)
+    demo = Demonstration(rom, ale.getMinimalActionSet())
+    record(ale, demo, output, frames, episodes)
 
 @cli.command(name='resume')
 @click.argument('partial_demo', type=click.Path(exists=True))
 @click.argument('output', type=click.Path())
 @click.option('--frames', default=60 * 60 * 30)
+@click.option('--episodes', default=0)
 @click.option('--rom', default=None)
-def resume(partial_demo, output, frames, rom):
+def resume(partial_demo, output, frames, episodes, rom):
     pygame.init()
     demo = Demonstration.load(partial_demo)
     ale = ALE.ALEInterface()
@@ -90,12 +92,13 @@ def resume(partial_demo, output, frames, rom):
     else:
         ale.loadROM(rom)
     demo.reset_to_latest_snapshot(ale)
-    record(ale, demo, output, frames)
+    record(ale, demo, output, frames, episodes)
 
-def record(ale, demo, output, num_frames):
+def record(ale, demo, output, num_frames, num_episodes):
     keystates = {key: False for key in keys}
     score = 0
     clock = pygame.time.Clock()
+    episodes = 0
     try:
         while len(demo) < num_frames:
             if len(demo) % demo.snapshot_interval == 0:
@@ -106,7 +109,10 @@ def record(ale, demo, output, num_frames):
             score += reward
             game_over = False
             if ale.game_over():
+                episodes += 1
                 print 'game over, score: {}'.format(score)
+                if num_episodes > 0 and episodes >= num_episodes:
+                    break
                 print 'restarting in 5 seconds'
                 score = 0
                 game_over = True
@@ -114,7 +120,8 @@ def record(ale, demo, output, num_frames):
                 ale.reset_game()
             demo.record_timestep(ale.getScreenRGB(), action, reward, game_over)
             clock.tick(60)
-            print clock.get_fps()
+            if len(demo) % 10000 == 0:
+                print 'FPS:', clock.get_fps()
     except KeyboardInterrupt:
         pass
     finally:

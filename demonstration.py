@@ -48,8 +48,9 @@ class Demonstration(object):
 
     snapshot_interval = 1000
 
-    def __init__(self, rom):
+    def __init__(self, rom, action_set):
         self.rom = rom
+        self.action_set = action_set
         self.frames = FrameBank()
         self.actions = []
         self.rewards = []
