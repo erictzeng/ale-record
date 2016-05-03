@@ -67,7 +67,7 @@ def cli():
 @click.argument('output', type=click.Path())
 @click.option('--frames', default=60 * 60 * 30)
 @click.option('--episodes', default=0)
-@click.option('--seed', default=123)
+@click.option('--seed', default=0)
 def record_new(rom, output, frames, episodes, seed):
     pygame.init()
     ale = ALE.ALEInterface()
